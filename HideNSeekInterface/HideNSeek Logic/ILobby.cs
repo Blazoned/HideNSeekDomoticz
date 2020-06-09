@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace HideNSeek.Logic
 {
-    public class Class1
+    public interface ILobby
     {
     }
 }
