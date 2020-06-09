@@ -1,0 +1,25 @@
+﻿<Window x:Class="HideNSeekInterface.LobbyWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:HideNSeekInterface"
+        mc:Ignorable="d"
+        Title="LobbyWindow" Height="450" Width="275px">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="1*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition Width="auto" />
+            <ColumnDefinition Width="100px"/>
+        </Grid.ColumnDefinitions>
+        <Label Grid.Row="0" Grid.Column="0" Content="Lobby Address: " Margin="10,5,0,5" Padding="5,5,0,5"/>
+        <Label Grid.Row="0" Grid.Column="1" Content="127.0.0.1" Margin="0,5,10,5" Padding="0,5,5,5"/>
+        <Label Grid.Row="0" Grid.Column="2" Content="Players:" Margin="5,5,10,5" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+        <Button Grid.Row="1" Grid.ColumnSpan="2" Content="Disconnect" Height="25px" Margin="10,10,10,10" VerticalAlignment="Top" Click="BtnClickDisconnect"/>
+        <ListBox Grid.Row="1" Grid.Column="2" HorizontalAlignment="Left" Margin="5,5,10,10" Width="100px"/>
+    </Grid>
+</Window>
