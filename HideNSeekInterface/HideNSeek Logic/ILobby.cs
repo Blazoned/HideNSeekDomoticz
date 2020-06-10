@@ -45,9 +45,5 @@ namespace HideNSeek.Logic
         /// <param name="roomName">The name of the room.</param>
         /// <returns>Returns true if the seeker has correctly guessed the room the hider was hiding in.</returns>
         bool GuessRoom(Player seeker, string playerName, string roomName);
-        /// <summary>
-        /// Signals all <see cref="Player"/>s that the game has ended.
-        /// </summary>
-        void EndGame();
     }
 }
