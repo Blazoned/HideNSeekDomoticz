@@ -1,0 +1,29 @@
+﻿<Window x:Class="HideNSeek.Interface.SeekingWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:HideNSeek.Interface"
+        mc:Ignorable="d"
+        Title="SeekingWindow" Height="450" Width="800">
+    <Grid>
+        <ComboBox HorizontalAlignment="Left" Margin="30,50,0,0" VerticalAlignment="Top" Width="120" SelectionChanged="CbxSeek">
+            <ComboBoxItem Content="Room 1" Selected="ComboBoxItem_Selected" HorizontalAlignment="Left" Width="118"/>
+            <ComboBoxItem Content="Room 2" HorizontalAlignment="Left" Width="118.4"/>
+            <ComboBoxItem Content="Room 3" HorizontalAlignment="Left" Width="118.4"/>
+            <ComboBoxItem Content="Room 4" HorizontalAlignment="Left" Width="118.4"/>
+            <ComboBoxItem Content="Room 5" HorizontalAlignment="Left" Width="118.4"/>
+            <ComboBoxItem Content="Room 6" HorizontalAlignment="Left" Width="118.4" Selected="ComboBoxItem_Selected_1"/>
+            <ComboBoxItem Content="Room 7" HorizontalAlignment="Left" Width="118.4"/>
+            <ComboBoxItem Content="Room 8" HorizontalAlignment="Left" Width="118.4"/>
+            <ComboBoxItem Content="Room 9" HorizontalAlignment="Left" Width="118.4"/>
+            <ComboBoxItem Content="Room 10" HorizontalAlignment="Left" Width="118.4"/>
+        </ComboBox>
+        <Image HorizontalAlignment="Left" Height="300" Margin="248,57,0,0" VerticalAlignment="Top" Width="480"/>
+        <Button Content="Guess" HorizontalAlignment="Left" Margin="30,338,0,0" VerticalAlignment="Top" Width="120" Height="52"/>
+        <Label Content="Seeking" HorizontalAlignment="Left" Margin="30,10,0,0" VerticalAlignment="Top" Width="120" FontSize="18" FontWeight="Bold" FontStyle="Italic"/>
+
+
+
+    </Grid>
+</Window>

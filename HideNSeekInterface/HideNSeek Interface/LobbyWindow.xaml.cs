@@ -31,5 +31,15 @@ namespace HideNSeek.Interface
             window.Show();
             this.Close();
         }
+
+        private void BtnClickStart(object sender, RoutedEventArgs e)
+        {/// toevoegen naam van spelwindow aan functie
+            Console.WriteLine("Game start");
+            ///Window window =
+            window.Show();
+            this.Close();
+        }
+
+        
     }
 }

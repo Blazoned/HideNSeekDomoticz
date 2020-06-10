@@ -27,7 +27,22 @@ namespace HideNSeek.Interface
 
         private void BtnClickHost(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine("Lobby");
+            Console.WriteLine("Host Lobby");
+            Window window = new LobbyWindow();
+            window.Show();
+            this.Close();
+        }
+
+        private void BtnClickQuit(object sender, RoutedEventArgs e)
+        {
+            Console.WriteLine("Quit");
+            this.Close();
+        }
+
+        private void BtnClickJoin(object sender, RoutedEventArgs e)
+        {
+            Console.WriteLine("Join Lobby");
+            /// Checken joincode toevoegen
             Window window = new LobbyWindow();
             window.Show();
             this.Close();
