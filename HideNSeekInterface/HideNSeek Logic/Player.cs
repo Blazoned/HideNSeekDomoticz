@@ -8,28 +8,10 @@ namespace HideNSeek.Logic
 {
     public abstract class Player
     {
-        #region Fields
-        private string _playerName;
-        private int _points;
-        private ILobby _lobby;
-        #endregion
-
         #region Properties
-        public string PlayerName
-        {
-            get { return _playerName; }
-            set { _playerName = value; }
-        }
-        public int Points
-        {
-            get { return _points; }
-            private set { _points = value; }
-        }
-        public ILobby Lobby
-        {
-            get { return _lobby; }
-            private set { _lobby = value; }
-        }
+        public string PlayerName { get; set; }
+        public int Points { get; private set; }
+        public ILobby Lobby { get; private set; }
         #endregion
 
         #region Constructor
@@ -42,7 +24,7 @@ namespace HideNSeek.Logic
         }
         public void Disconnect()
         {
-            _lobby.Disconnect(this);
+            Lobby.Disconnect(this);
         }
         public void EndGame()
         {
@@ -51,7 +33,7 @@ namespace HideNSeek.Logic
         public void AddPoints(int points)
         {
             if (points > 0)
-                _points += points;
+                Points += points;
         }
         #endregion
 
