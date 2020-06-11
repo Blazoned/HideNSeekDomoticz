@@ -29,6 +29,7 @@ namespace HideNSeek.Logic
         private readonly bool _isHost;
         private TcpClient _guestClient;
         private CancellationTokenSource _cancellationToken;
+        private Player _hostPlayer;
         #endregion
 
         #region Properties
@@ -39,6 +40,14 @@ namespace HideNSeek.Logic
         {
             get { return _hidingTime; }
             private set { _hidingTime = value; }
+        }
+
+        /// <summary>
+        /// The host's player object.
+        /// </summary>
+        public Player HostPlayer
+        {
+            get { return _hostPlayer; }
         }
 
         /// <summary>
@@ -66,9 +75,10 @@ namespace HideNSeek.Logic
 
             this._hidingTime = hidingTime;
             this._seekers = new List<Seeker>();
+            this._hostPlayer = new Hider(null, hostIdentifier, new DomoticzHider("127.0.0.1", "8080"));
             this._hiders = new List<Hider>
             {
-                new Hider(null, hostIdentifier, new DomoticzHider("127.0.0.1", "8080"))
+                this._hostPlayer as Hider
             };
         }
         #endregion
@@ -129,13 +139,16 @@ namespace HideNSeek.Logic
                     if (_seekers.Where(player => player.PlayerName == username).Count() == 0
                         && _hiders.Where(player => player.PlayerName == username).Count() == 0)
                     {
-                        _seekers.Add(new Seeker(client, username));
+                        Player player = new Seeker(client, username);
+                        _seekers.Add(player as Seeker);
+                        PlayerConnected(player);
                         success = HidingTime;
                     }
                 }
                 // Send the new client either a code of failure (-1) or the hiding time.
                 using (StreamWriter sw = new StreamWriter(ns))
                 {
+                    sw.WriteLine(HostPlayer.PlayerName);
                     sw.WriteLine(success);
                     sw.Flush();
                 }
@@ -171,12 +184,16 @@ namespace HideNSeek.Logic
 
                     using (StreamReader sr = new StreamReader(ns))
                     {
+                        string hostName = await sr.ReadLineAsync();
                         int result = int.Parse(await sr.ReadLineAsync());
 
                         if (result > -1)
                         {
                             HidingTime = result;
-                            player = new Seeker(client, username);
+                            player = new Seeker(client, username)
+                            {
+                                HostPlayerName = hostName
+                            };
                             this._seekers.Add(player as Seeker);
                             this._guestClient = client;
                         }
@@ -535,6 +552,11 @@ namespace HideNSeek.Logic
                     .FirstOrDefault()
                     .AddPoints(points);
         }
+        #endregion
+
+        #region Events
+        public delegate void PlayerConnectedHandler(Player player);
+        public event PlayerConnectedHandler PlayerConnected;
         #endregion
     }
 }

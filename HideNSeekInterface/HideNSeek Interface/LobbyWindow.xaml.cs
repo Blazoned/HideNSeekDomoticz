@@ -36,7 +36,7 @@ namespace HideNSeek.Interface
         {/// toevoegen naam van spelwindow aan functie
             Console.WriteLine("Game start");
             ///Window window =
-            window.Show();
+            // window.Show();
             this.Close();
         }
 

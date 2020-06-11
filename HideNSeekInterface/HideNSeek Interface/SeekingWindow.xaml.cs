@@ -28,8 +28,5 @@ namespace HideNSeek.Interface
         {
 
         }
-
-        
-        }
     }
 }

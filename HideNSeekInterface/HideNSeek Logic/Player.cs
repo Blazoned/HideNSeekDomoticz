@@ -28,6 +28,10 @@ namespace HideNSeek.Logic
         /// The client connection to the host.
         /// </summary>
         public TcpClient Client { get; private set; }
+        /// <summary>
+        /// TEMPORARY (client cannot receive connected players in lobby yet): Holds the host's username.
+        /// </summary>
+        public string HostPlayerName { get; set; }
         #endregion
 
         #region Constructor

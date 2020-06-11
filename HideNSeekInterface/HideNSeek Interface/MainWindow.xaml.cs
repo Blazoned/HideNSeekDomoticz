@@ -25,27 +25,57 @@ namespace HideNSeek.Interface
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Open a lobby as a host.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void BtnClickHost(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine("Host Lobby");
-            Window window = new LobbyWindow();
-            window.Show();
-            this.Close();
-        }
+            if (!UsernameCheck())
+                return;
 
-        private void BtnClickQuit(object sender, RoutedEventArgs e)
-        {
-            Console.WriteLine("Quit");
+            Window window = new LobbyWindow(tbUsername.Text, true);
+            window.Show();
             this.Close();
         }
 
         private void BtnClickJoin(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine("Join Lobby");
-            /// Checken joincode toevoegen
-            Window window = new LobbyWindow();
+            if (!UsernameCheck())
+                return;
+
+            Window window = new LobbyWindow(tbUsername.Text, false);
             window.Show();
             this.Close();
         }
+
+        /// <summary>
+        /// Exit the application.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void BtnClickQuit(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
+
+        #region Methods
+        /// <summary>
+        /// Check if username has been put in.
+        /// </summary>
+        /// <returns>Returns true if there's a valid username.</returns>
+        public bool UsernameCheck()
+        {
+            bool result = !string.IsNullOrEmpty(tbUsername.Text);
+
+            MessageBox.Show("You have not filled in a username yet!",
+                            "HideNSeek",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Exclamation);
+
+            return result;
+        }
+        #endregion
     }
 }

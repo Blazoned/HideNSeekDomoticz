@@ -8,12 +8,12 @@
         Title="SeekingWindow" Height="450" Width="800">
     <Grid>
         <ComboBox HorizontalAlignment="Left" Margin="30,50,0,0" VerticalAlignment="Top" Width="120" SelectionChanged="CbxSeek">
-            <ComboBoxItem Content="Room 1" Selected="ComboBoxItem_Selected" HorizontalAlignment="Left" Width="118"/>
+            <ComboBoxItem Content="Room 1" HorizontalAlignment="Left" Width="118"/>
             <ComboBoxItem Content="Room 2" HorizontalAlignment="Left" Width="118.4"/>
             <ComboBoxItem Content="Room 3" HorizontalAlignment="Left" Width="118.4"/>
             <ComboBoxItem Content="Room 4" HorizontalAlignment="Left" Width="118.4"/>
             <ComboBoxItem Content="Room 5" HorizontalAlignment="Left" Width="118.4"/>
-            <ComboBoxItem Content="Room 6" HorizontalAlignment="Left" Width="118.4" Selected="ComboBoxItem_Selected_1"/>
+            <ComboBoxItem Content="Room 6" HorizontalAlignment="Left" Width="118.4"/>
             <ComboBoxItem Content="Room 7" HorizontalAlignment="Left" Width="118.4"/>
             <ComboBoxItem Content="Room 8" HorizontalAlignment="Left" Width="118.4"/>
             <ComboBoxItem Content="Room 9" HorizontalAlignment="Left" Width="118.4"/>
