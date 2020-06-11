@@ -1,20 +1,28 @@
-﻿using System;
+﻿using HideNSeek.DAL.Seeker;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace HideNSeek.Logic
 {
+    /// <summary>
+    /// A <see cref="Player"/> within a <see cref="Lobby"/> who are hiding for the <see cref="Seeker"/> players.
+    /// </summary>
     public class Hider : Player
     {
         #region Properties
+        /// <summary>
+        /// Gets whether or not the <see cref="Hider"/> has been found.
+        /// </summary>
         public bool IsFound { get; private set; }
+        /// <summary>
+        /// Gets the <see cref="Hider"/>'s map.
+        /// </summary>
         public Map Map { get; private set; }
         #endregion
 
         #region Fields
+        private IHiderDAL _hiderDAL;
         #endregion
 
         #region Constructor
@@ -23,35 +31,56 @@ namespace HideNSeek.Logic
         /// </summary>
         /// <param name="client">The client connection.</param>
         /// <param name="username">The user's identifier.</param>
-        public Hider(TcpClient client, string username) : base(client, username) { }
+        public Hider(TcpClient client, string username, IHiderDAL dal) : base(client, username)
+        {
+            BeginGame += BeginHiding;
+            _hiderDAL = dal;
+        }
         #endregion
 
         #region Functions
+        /// <summary>
+        /// Notifies that the user is found.
+        /// </summary>
         public void SetPlayerFound()
         {
             IsFound = true;
             PlayerFound(this.PlayerName);
-            BeginGame += BeginHiding;
         }
 
         public List<Room> SetMap()
         {
             throw new NotImplementedException();
         }
-
+        /// <summary>
+        /// Start the hiding process.
+        /// </summary>
         public void StartHiding()
         {
-            throw new NotImplementedException();
+            _hiderDAL.StartHiding();
         }
-
+        /// <summary>
+        /// Check if the <see cref="Hider"/> is in the specified room.
+        /// </summary>
+        /// <param name="roomName">The room name.</param>
+        /// <returns>Returns true if the <see cref="Hider"/> has been found.</returns>
         public bool CheckRoom(string roomName)
         {
-            throw new NotImplementedException();
-        }
+            bool result = _hiderDAL.GetCurrentRoom() == roomName;
 
+            if (result)
+                SetPlayerFound();
+
+            return result;
+        }
+        /// <summary>
+        /// Gets the room the <see cref="Hider"/> is currently in.
+        /// </summary>
+        /// <returns>The room the hider is in.</returns>
         public Room GetPosition()
         {
-            throw new NotImplementedException();
+            string roomName = _hiderDAL.GetCurrentRoom();
+            return new Room(roomName);
         }
         #endregion
 

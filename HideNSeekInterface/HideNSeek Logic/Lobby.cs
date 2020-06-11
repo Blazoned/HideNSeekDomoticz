@@ -7,6 +7,7 @@ using System.Net;
 using System.IO;
 using Newtonsoft.Json;
 using System.Threading;
+using HideNSeek.DAL.Seeker;
 
 namespace HideNSeek.Logic
 {
@@ -67,7 +68,7 @@ namespace HideNSeek.Logic
             this._seekers = new List<Seeker>();
             this._hiders = new List<Hider>
             {
-                new Hider(null, hostIdentifier)
+                new Hider(null, hostIdentifier, new DomoticzHider("127.0.0.1", "8080"))
             };
         }
         #endregion
