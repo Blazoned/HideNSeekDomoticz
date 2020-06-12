@@ -32,9 +32,10 @@ namespace HideNSeek.Logic
         /// </summary>
         /// <param name="client">The client connection.</param>
         /// <param name="username">The user's identifier.</param>
-        public Player(string username)
+        public Player(string username, ILobby lobby)
         {
             PlayerName = username;
+            Lobby = lobby;
         }
         #endregion
 
@@ -58,14 +59,14 @@ namespace HideNSeek.Logic
         /// </summary>
         public void StartGame()
         {
-            
+            BeginGame?.Invoke();
         }
         /// <summary>
         /// Signals the end of the game.
         /// </summary>
         public void EndGame()
         {
-            
+            FinishGame?.Invoke();
         }
         /// <summary>
         /// Awards points to the player.
@@ -82,8 +83,11 @@ namespace HideNSeek.Logic
         #endregion
 
         #region Events
-        internal delegate void BeginGameHandler();
-        internal event BeginGameHandler BeginGame;
+        public delegate void BeginGameHandler();
+        public event BeginGameHandler BeginGame;
+
+        public delegate void FinishGameHandler();
+        public event FinishGameHandler FinishGame;
         #endregion
     }
 }

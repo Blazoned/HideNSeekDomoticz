@@ -46,7 +46,8 @@ namespace HideNSeek.Logic
         /// </summary>
         public Lobby()
         {
-            
+            this._seekers = new List<Seeker>();
+            this._hiders = new List<Hider>();
         }
         /// <summary>
         /// Initiate a lobby for players to host a new lobby.
@@ -57,7 +58,7 @@ namespace HideNSeek.Logic
         {
             this.HidingTime = hidingTime;
             this._seekers = new List<Seeker>();
-            this.HostPlayer = new Hider(hostIdentifier, new DomoticzHider("127.0.0.1", "8080"));
+            this.HostPlayer = new Hider(hostIdentifier, this, new DomoticzHider("127.0.0.1", "8080"));
             this._hiders = new List<Hider>
             {
                 this.HostPlayer as Hider
@@ -70,9 +71,10 @@ namespace HideNSeek.Logic
         /// <summary>
         /// Starts the game for every player.
         /// </summary>
-        public void StartGame()
+        internal void StartGame()
         {
             _isActive = true;
+            _remainingHidingTime = HidingTime;
             IEnumerable<Player> players = GetAllPlayers();
 
             foreach(Player player in players)
@@ -86,7 +88,7 @@ namespace HideNSeek.Logic
         /// Sets the amount of time a <see cref="Hider"/> has until the <see cref="Seeker"/>s can look for them.
         /// </summary>
         /// <param name="seconds">The amount of seconds.</param>
-        public void SetHidingTime(int seconds)
+        internal void SetHidingTime(int seconds)
         {
             if (!this._isActive)
                 HidingTime = seconds;
@@ -94,7 +96,7 @@ namespace HideNSeek.Logic
         /// <summary>
         /// Signals all <see cref="Player"/>s that the game has ended.
         /// </summary>
-        public void EndGame()
+        internal void EndGame()
         {
             _isActive = false;
             IEnumerable<Player> players = GetAllPlayers();
@@ -120,7 +122,7 @@ namespace HideNSeek.Logic
             if (players.Count(p => p.PlayerName == username) > 0)
                 return null;
 
-            Seeker player = new Seeker(username);
+            Seeker player = new Seeker(username, this);
             this._seekers.Add(player);
             PlayerConnected(player);
             return player;
@@ -132,7 +134,7 @@ namespace HideNSeek.Logic
         /// <param name="player">The player to disconnect.</param>
         public void Disconnect(Player player)
         {
-            if (_isHost)
+            if (_IsHost)
             {
                 EndGame();
             }

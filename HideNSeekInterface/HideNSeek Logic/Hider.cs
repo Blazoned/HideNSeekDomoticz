@@ -1,6 +1,7 @@
 ﻿using HideNSeek.DAL.Seeker;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 
 namespace HideNSeek.Logic
@@ -18,7 +19,15 @@ namespace HideNSeek.Logic
         /// <summary>
         /// Gets the <see cref="Hider"/>'s map.
         /// </summary>
-        public Map Map { get; private set; }
+        public Map Map
+        {
+            get
+            {
+                Map map = new Map();
+                _hiderDAL.GetRooms().ToList().ForEach(roomName => map.AddRoom(new Room(roomName)));
+                return map;
+            }
+        }
         #endregion
 
         #region Fields
@@ -31,7 +40,7 @@ namespace HideNSeek.Logic
         /// </summary>
         /// <param name="client">The client connection.</param>
         /// <param name="username">The user's identifier.</param>
-        public Hider(string username, IHiderDAL dal) : base(username)
+        public Hider(string username, ILobby lobby, IHiderDAL dal) : base(username, lobby)
         {
             BeginGame += BeginHiding;
             _hiderDAL = dal;
@@ -56,7 +65,7 @@ namespace HideNSeek.Logic
             if (result)
             {
                 IsFound = true;
-                PlayerFound(this.PlayerName);
+                PlayerFound?.Invoke(this.PlayerName);
             }
 
             return result;

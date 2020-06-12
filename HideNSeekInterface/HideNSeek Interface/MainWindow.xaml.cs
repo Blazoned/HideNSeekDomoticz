@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HideNSeek.Logic;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,6 +21,8 @@ namespace HideNSeek.Interface
     /// </summary>
     public partial class MainWindow : Window
     {
+        Host _host;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -35,17 +38,33 @@ namespace HideNSeek.Interface
             if (!UsernameCheck())
                 return;
 
-            Window window = new LobbyWindow(tbUsername.Text);
+            btnHost.IsEnabled = false;
+
+            _host = new Host(tbUsername.Text);
+            _host.SetHidingTime(10);
+
+            Window window = new LobbyWindow(_host.Lobby, _host);
             window.Show();
-            this.Close();
         }
 
         private void BtnClickJoin(object sender, RoutedEventArgs e)
         {
-            if (!UsernameCheck() || !IpAddressCheck())
+            if (!UsernameCheck() || !IpAddressCheck() || !HostAvailableCheck())
                 return;
 
-            Window window = new LobbyWindow(tbUsername.Text, tbAddress.Text);
+            Player player = _host.Lobby.Connect(tbAddress.Text, tbUsername.Text);
+
+            if (player == null)
+            {
+                MessageBox.Show("Username already taken!",
+                                "HideNSeek",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Exclamation);
+
+                return;
+            } 
+
+            Window window = new LobbyWindow(_host.Lobby, player);
             window.Show();
             this.Close();
         }
@@ -77,12 +96,32 @@ namespace HideNSeek.Interface
 
             return result;
         }
+        /// <summary>
+        /// Check if ip address has been put in.
+        /// </summary>
+        /// <returns>Returns true if there's a valid ip address.</returns>
         public bool IpAddressCheck()
         {
             bool result = !string.IsNullOrEmpty(tbAddress.Text);
 
             if (!result)
                 MessageBox.Show("You have not filled in an ip address yet!",
+                                "HideNSeek",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Exclamation);
+
+            return result;
+        }
+        /// <summary>
+        /// Check if host is available.
+        /// </summary>
+        /// <returns>Returns true if there's a valid host.</returns>
+        public bool HostAvailableCheck()
+        {
+            bool result = _host != null;
+
+            if (!result)
+                MessageBox.Show("No connection was found!",
                                 "HideNSeek",
                                 MessageBoxButton.OK,
                                 MessageBoxImage.Exclamation);

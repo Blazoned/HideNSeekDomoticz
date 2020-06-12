@@ -66,7 +66,7 @@ namespace HideNSeek.DAL.Seeker
         public void StartHiding()
         {
             ResetPath();
-            StartHidingScene();
+            // StartHidingScene();
         }
 
         /// <summary>

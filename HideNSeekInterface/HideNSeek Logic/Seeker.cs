@@ -15,7 +15,7 @@ namespace HideNSeek.Logic
         /// </summary>
         /// <param name="client">The client connection.</param>
         /// <param name="username">The user's identifier.</param>
-        public Seeker(string username) : base(username) { }
+        public Seeker(string username, ILobby lobby) : base(username, lobby) { }
         #endregion
 
         #region Functions

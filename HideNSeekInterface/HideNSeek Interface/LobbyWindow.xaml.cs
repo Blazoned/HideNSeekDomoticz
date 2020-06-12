@@ -22,21 +22,33 @@ namespace HideNSeek.Interface
     public partial class LobbyWindow : Window
     {
         private Host _host;
-        private ILobby _lobby;
+        private Player _player;
+        private Lobby _lobby;
 
         /// <summary>
         /// True if window was initialised as a host.
         /// </summary>
         private bool IsHost { get { return _host != null; } }
 
-        public LobbyWindow(string username, string address = null)
+        public LobbyWindow(Lobby lobby, Host host)
         {
             InitializeComponent();
 
-            if (string.IsNullOrEmpty(address))
-                InitialiseHost(username);
-            else
-                InitialiseGuest(username, address).RunSynchronously();
+            this._host = host;
+            this._player = host.Lobby.HostPlayer;
+            this._lobby = lobby;
+
+            InitialiseHost();
+        }
+
+        public LobbyWindow(Lobby lobby, Player player)
+        {
+            InitializeComponent();
+
+            this._player = player;
+            this._lobby = lobby;
+
+            InitialiseGuest();
         }
 
         private void WindowClosedDisconnect(object sender, EventArgs e)
@@ -60,11 +72,9 @@ namespace HideNSeek.Interface
         }
 
         private void BtnClickStart(object sender, RoutedEventArgs e)
-        {/// toevoegen naam van spelwindow aan functie
+        {
             Console.WriteLine("Game start");
-            ///Window window =
-            // window.Show();
-            this.Close();
+            _host.StartGame();
         }
 
         #region Methods
@@ -72,81 +82,69 @@ namespace HideNSeek.Interface
         /// <summary>
         /// Initialise the lobby for a host.
         /// </summary>
-        /// <param name="username">The user's identifier.</param>
-        private void InitialiseHost(string username)
+        private void InitialiseHost()
         {
-            _host = new Host(username);
-            _lobby = _host.Lobby;
-
             // Configure player listbox
-            lBoxPlayers.Items.Add($"YOU: {username}");
-            _host.PlayerConnected += () =>
+            lBoxPlayers.Items.Add($"YOU: {_lobby.HostPlayer.PlayerName}");
+            _lobby.PlayerConnected += (player) =>
             {
-                lBoxPlayers.Items.Clear();
-                lBoxPlayers.Items.Add($"YOU: {username}");
-                foreach (Player player in _host.Lobby._hiders)
-                {
-                    if (player.PlayerName != username)
-                        lBoxPlayers.Items.Add(player.PlayerName);
-                }
-                foreach (Player player in _host.Lobby._seekers)
-                {
-                    if (player.PlayerName != username)
-                        lBoxPlayers.Items.Add(player.PlayerName);
-                }
+                lBoxPlayers.Items.Add($"{player.PlayerName}");
+            };
+            _lobby.PlayerDisconnected += (player) =>
+            {
+                Console.WriteLine(lBoxPlayers.Items.IndexOf(player.PlayerName));
+                lBoxPlayers.Items.Remove(player.PlayerName);
             };
 
             // Configure buttons
             btnDisconnect.Content = "Disband";
 
-            // Configure address label
-            _ = Task.Run(() =>
-            {
-                // Wait for the host to properly setup
-                Thread.Sleep(100);
-                lbAddress.Content = _host.Address;
-            });
+            // Configure game start
+            _lobby.HostPlayer.BeginGame += OpenGameWindow;
         }
 
         /// <summary>
         /// Initialise the lobby for a guest.
         /// </summary>
-        /// <param name="username">The user's identifier.</param>
-        /// <param name="address">The ip address.</param>
-        private async Task InitialiseGuest(string username, string address)
+        private void InitialiseGuest()
         {
-            // Connect to host
-            _lobby = new Lobby();
-
-            try
-            {
-                await _lobby.ConnectAsync(address, username);
-            }
-            catch (Exception e)
-            {
-                Window window = new MainWindow();
-                window.Show();
-                this.Close();
-                MessageBox.Show("Connection refused!",
-                                "HideNSeek",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Error);
-
-#if DEBUG
-                Console.WriteLine(e.Message);
-#endif
-            }
-
             // Configure player listbox
-            lBoxPlayers.Items.Add($"YOU: {username}");
-            // _host.Lobby.PlayerConnected += (Player player) => { lBoxPlayers.Items.Add(player.PlayerName); };
+            lBoxPlayers.Items.Add($"YOU: {_player.PlayerName}");
+
+            foreach(Hider h in _lobby._hiders)
+                if (h.PlayerName != _player.PlayerName)
+                    lBoxPlayers.Items.Add($"{h.PlayerName}");
+
+            foreach (Seeker s in _lobby._seekers)
+                if (s.PlayerName != _player.PlayerName)
+                    lBoxPlayers.Items.Add($"{s.PlayerName}");
+
+            _lobby.PlayerConnected += (p) =>
+            {
+                lBoxPlayers.Items.Add($"{p.PlayerName}");
+            };
+            _lobby.PlayerDisconnected += (p) =>
+            {
+                for (int i=0;i<lBoxPlayers.Items.Count;i++)
+                {
+                    if (lBoxPlayers.Items[i].ToString() == p.PlayerName)
+                        lBoxPlayers.Items.RemoveAt(i);
+                }
+            };
 
             // Configure buttons
             btnDisconnect.Content = "Disconnect";
             btnStart.IsEnabled = false;
 
-            // Configure address label
-            lbAddress.Content = address;
+            // Configure game start
+            _player.BeginGame += OpenGameWindow;
+        }
+
+        private void OpenGameWindow()
+        {
+            Window window = new GameWindow(_lobby, _player, _lobby.HostPlayer.PlayerName);
+            window.Show();
+            this.Close();
         }
         #endregion
 
@@ -164,7 +162,7 @@ namespace HideNSeek.Interface
         /// </summary>
         private void Disconnect()
         {
-            // throw new NotImplementedException();
+            _lobby.Disconnect(_player);
         }
         #endregion
         #endregion

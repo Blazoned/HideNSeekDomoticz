@@ -1,0 +1,17 @@
+﻿<Window x:Class="HideNSeek.Interface.GameWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:HideNSeek.Interface"
+        mc:Ignorable="d"
+        Title="SeekingWindow" Height="450" Width="800">
+    <Grid>
+        <Label Name="lbRole" Content="Seeking" HorizontalAlignment="Left" Margin="30,10,0,0" VerticalAlignment="Top" Width="120" FontSize="18" FontWeight="Bold" FontStyle="Italic"/>
+        <Label Name="lbStatus" Content="You can start seeking in: " Margin="30,39,549,237" />
+        <Label Name="lbGuessStatus" Content="" Margin="30,187,549,113" VerticalContentAlignment="Bottom" HorizontalContentAlignment="Left" />
+        <ComboBox Name="cbGuess"  HorizontalAlignment="Left" Margin="30,311,0,0" VerticalAlignment="Top" Width="120"/> 
+        <Image Source="/Images/floor-plan.png" HorizontalAlignment="Left" Height="300" Margin="248,57,0,0" VerticalAlignment="Top" Width="480"/>
+        <Button Name="btnGuess" Content="Guess" HorizontalAlignment="Left" Margin="30,338,0,0" VerticalAlignment="Top" Width="120" Height="52" Click="btnGuess_Click"/>
+    </Grid>
+</Window>
