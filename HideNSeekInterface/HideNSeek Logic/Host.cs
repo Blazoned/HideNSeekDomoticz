@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,7 +25,7 @@ namespace HideNSeek.Logic
         /// <summary>
         /// The game lobby.
         /// </summary>
-        internal Lobby Lobby { get; private set; }
+        public Lobby Lobby { get; private set; }
         /// <summary>
         /// Gets the server address.
         /// </summary>
@@ -41,7 +42,10 @@ namespace HideNSeek.Logic
             this.Lobby = new Lobby(username);
 
             IPAddress localAddress = IPAddress.Parse(LOCAL_ADDRESS);
+            
             this._hostListener = new TcpListener(localAddress, PORT);
+            this._hostListener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+            this._hostListener.Start();
 
             this._cancellationTokenSource = new CancellationTokenSource();
             _ = Task.Run(async () =>
@@ -84,6 +88,14 @@ namespace HideNSeek.Logic
         {
             _cancellationTokenSource.Cancel();
         }
+        /// <summary>
+        /// Disbands the entire lobby.
+        /// </summary>
+        public async void DisbandLobby()
+        {
+            await Lobby.DisconnectAsync(Lobby.HostPlayer);
+            _hostListener.Stop();
+        }
         #endregion
 
         #region Methods
@@ -94,11 +106,18 @@ namespace HideNSeek.Logic
         private async Task HostLobby()
         {
             TcpClient client = await this._hostListener.AcceptTcpClientAsync();
+            client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+
             _ = Task.Run(async () =>
             {
                 await Lobby.AddClientAsync(client);
             });
         }
+        #endregion
+
+        #region Events
+        public delegate void PlayerConnectedHandler();
+        public event PlayerConnectedHandler PlayerConnected;
         #endregion
     }
 }

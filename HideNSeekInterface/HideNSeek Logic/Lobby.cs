@@ -23,8 +23,8 @@ namespace HideNSeek.Logic
         #region Fields
         private int _hidingTime;
         private int _remainingHidingTime;
-        private List<Seeker> _seekers;
-        private List<Hider> _hiders;
+        public List<Seeker> _seekers;
+        public List<Hider> _hiders;
         private bool _isActive;
         private readonly bool _isHost;
         private TcpClient _guestClient;
@@ -141,7 +141,6 @@ namespace HideNSeek.Logic
                     {
                         Player player = new Seeker(client, username);
                         _seekers.Add(player as Seeker);
-                        PlayerConnected(player);
                         success = HidingTime;
                     }
                 }
@@ -155,7 +154,7 @@ namespace HideNSeek.Logic
             }
 
             // Start listening for host commandos
-            await HandleHostCommands(client);
+            _ = Task.Run(async () => await HandleHostCommands(client));
         }
         #endregion
 
@@ -168,43 +167,42 @@ namespace HideNSeek.Logic
         /// <returns>Returns a player object for the new player.</returns>
         public async Task<Player> ConnectAsync(string address, string username)
         {
-            using (TcpClient client = new TcpClient())
+            TcpClient client = new TcpClient();
+            client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+            await client.ConnectAsync(IPAddress.Parse(address), PORT);
+
+            Player player = null;
+
+            using (NetworkStream ns = client.GetStream())
             {
-                await client.ConnectAsync(IPAddress.Parse(address), PORT);
-
-                Player player = null;
-
-                using (NetworkStream ns = client.GetStream())
+                using (StreamWriter sw = new StreamWriter(ns))
                 {
-                    using (StreamWriter sw = new StreamWriter(ns))
-                    {
-                        await sw.WriteLineAsync(username);
-                        sw.Flush();
-                    }
-
-                    using (StreamReader sr = new StreamReader(ns))
-                    {
-                        string hostName = await sr.ReadLineAsync();
-                        int result = int.Parse(await sr.ReadLineAsync());
-
-                        if (result > -1)
-                        {
-                            HidingTime = result;
-                            player = new Seeker(client, username)
-                            {
-                                HostPlayerName = hostName
-                            };
-                            this._seekers.Add(player as Seeker);
-                            this._guestClient = client;
-                        }
-                    }
+                    await sw.WriteLineAsync(username);
+                    sw.Flush();
                 }
 
-                // Start listening for remote commandos
-                _ = Task.Run(async () => await HandleRemoteCommands(player));
+                using (StreamReader sr = new StreamReader(ns))
+                {
+                    string hostName = await sr.ReadLineAsync();
+                    int result = int.Parse(await sr.ReadLineAsync());
 
-                return player;
+                    if (result > -1)
+                    {
+                        HidingTime = result;
+                        player = new Seeker(client, username)
+                        {
+                            HostPlayerName = hostName
+                        };
+                        this._seekers.Add(player as Seeker);
+                        this._guestClient = client;
+                    }
+                }
             }
+
+            // Start listening for remote commandos
+            _ = Task.Run(async () => await HandleRemoteCommands(player));
+
+            return player;
         }
 
         /// <summary>
@@ -239,7 +237,8 @@ namespace HideNSeek.Logic
                     _hiders.Remove(player as Hider);
                 }
 
-                _cancellationToken.Cancel();
+                if (_cancellationToken != null)
+                    _cancellationToken.Cancel();
             }
             else
             {
@@ -552,11 +551,6 @@ namespace HideNSeek.Logic
                     .FirstOrDefault()
                     .AddPoints(points);
         }
-        #endregion
-
-        #region Events
-        public delegate void PlayerConnectedHandler(Player player);
-        public event PlayerConnectedHandler PlayerConnected;
         #endregion
     }
 }

@@ -23,6 +23,9 @@ namespace HideNSeek.Interface
         public MainWindow()
         {
             InitializeComponent();
+#if DEBUG
+            tbAddress.Text = "127.0.0.1";
+#endif
         }
 
         /// <summary>
@@ -35,17 +38,17 @@ namespace HideNSeek.Interface
             if (!UsernameCheck())
                 return;
 
-            Window window = new LobbyWindow(tbUsername.Text, true);
+            Window window = new LobbyWindow(tbUsername.Text);
             window.Show();
             this.Close();
         }
 
         private void BtnClickJoin(object sender, RoutedEventArgs e)
         {
-            if (!UsernameCheck())
+            if (!UsernameCheck() || !IpAddressCheck())
                 return;
 
-            Window window = new LobbyWindow(tbUsername.Text, false);
+            Window window = new LobbyWindow(tbUsername.Text, tbAddress.Text);
             window.Show();
             this.Close();
         }
@@ -69,10 +72,23 @@ namespace HideNSeek.Interface
         {
             bool result = !string.IsNullOrEmpty(tbUsername.Text);
 
-            MessageBox.Show("You have not filled in a username yet!",
-                            "HideNSeek",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Exclamation);
+            if (!result)
+                MessageBox.Show("You have not filled in a username yet!",
+                                "HideNSeek",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Exclamation);
+
+            return result;
+        }
+        public bool IpAddressCheck()
+        {
+            bool result = !string.IsNullOrEmpty(tbAddress.Text);
+
+            if (!result)
+                MessageBox.Show("You have not filled in an ip address yet!",
+                                "HideNSeek",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Exclamation);
 
             return result;
         }

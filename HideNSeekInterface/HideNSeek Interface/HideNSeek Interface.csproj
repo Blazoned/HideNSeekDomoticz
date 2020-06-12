@@ -115,5 +115,11 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HideNSeek Logic\HideNSeek Logic.csproj">
+      <Project>{a9114c6f-813a-4204-ad0d-112e60b36c08}</Project>
+      <Name>HideNSeek Logic</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
