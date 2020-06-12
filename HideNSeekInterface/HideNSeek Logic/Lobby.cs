@@ -134,7 +134,7 @@ namespace HideNSeek.Logic
         /// <param name="player">The player to disconnect.</param>
         public void Disconnect(Player player)
         {
-            if (_IsHost)
+            if (_IsHost && player.PlayerName == HostPlayer.PlayerName)
             {
                 EndGame();
             }

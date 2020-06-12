@@ -73,7 +73,19 @@ namespace HideNSeek.Interface
 
         private void BtnClickStart(object sender, RoutedEventArgs e)
         {
-            Console.WriteLine("Game start");
+            int time = 300;
+
+            if (string.IsNullOrEmpty(tbTime.Text) || !int.TryParse(tbTime.Text, out time))
+            {
+                MessageBox.Show("You have not set a hiding time yet!",
+                                "HideNSeek",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Exclamation);
+
+                return;
+            }
+
+            _host.SetHidingTime(time);
             _host.StartGame();
         }
 
@@ -108,6 +120,10 @@ namespace HideNSeek.Interface
         /// </summary>
         private void InitialiseGuest()
         {
+            // Hide settings
+            lbTime.Visibility = Visibility.Collapsed;
+            tbTime.Visibility = Visibility.Collapsed;
+
             // Configure player listbox
             lBoxPlayers.Items.Add($"YOU: {_player.PlayerName}");
 
@@ -130,6 +146,10 @@ namespace HideNSeek.Interface
                     if (lBoxPlayers.Items[i].ToString() == p.PlayerName)
                         lBoxPlayers.Items.RemoveAt(i);
                 }
+            };
+            _player.FinishGame += () =>
+            {
+                this.Close();
             };
 
             // Configure buttons

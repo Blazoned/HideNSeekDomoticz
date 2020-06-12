@@ -187,7 +187,10 @@ namespace HideNSeek.Interface
                 Window window = new MainWindow();
                 window.Show();
             }
-            this.Close();
+            Dispatcher.Invoke(() =>
+            {
+                Close();
+            });
         }
         #endregion
     }
