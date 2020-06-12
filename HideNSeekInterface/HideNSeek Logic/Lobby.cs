@@ -16,44 +16,28 @@ namespace HideNSeek.Logic
     /// </summary>
     public class Lobby : ILobby
     {
-        #region Constants
-        const int PORT = 25555;
-        #endregion
-
         #region Fields
-        private int _hidingTime;
         private int _remainingHidingTime;
         public List<Seeker> _seekers;
         public List<Hider> _hiders;
         private bool _isActive;
-        private readonly bool _isHost;
-        private TcpClient _guestClient;
-        private CancellationTokenSource _cancellationToken;
-        private Player _hostPlayer;
         #endregion
 
         #region Properties
         /// <summary>
         /// The amount of time a <see cref="Hider"/> has until a <see cref="Seeker"/> can look for them.
         /// </summary>
-        public int HidingTime
-        {
-            get { return _hidingTime; }
-            private set { _hidingTime = value; }
-        }
+        public int HidingTime { get; private set; }
 
         /// <summary>
         /// The host's player object.
         /// </summary>
-        public Player HostPlayer
-        {
-            get { return _hostPlayer; }
-        }
+        public Player HostPlayer { get; private set; }
 
         /// <summary>
         /// Checks if the user is actually the host.
         /// </summary>
-        private bool _IsHost { get { return _guestClient != null || _isHost; } }
+        private bool _IsHost { get { return HostPlayer != null; } }
         #endregion
 
         #region Constructor
@@ -62,7 +46,7 @@ namespace HideNSeek.Logic
         /// </summary>
         public Lobby()
         {
-            this._isHost = false;
+            
         }
         /// <summary>
         /// Initiate a lobby for players to host a new lobby.
@@ -71,14 +55,12 @@ namespace HideNSeek.Logic
         /// <param name="hidingTime">The amount of time a <see cref="Hider"/> has for hiding.</param>
         public Lobby(string hostIdentifier, int hidingTime = 300)
         {
-            this._isHost = true;
-
-            this._hidingTime = hidingTime;
+            this.HidingTime = hidingTime;
             this._seekers = new List<Seeker>();
-            this._hostPlayer = new Hider(null, hostIdentifier, new DomoticzHider("127.0.0.1", "8080"));
+            this.HostPlayer = new Hider(hostIdentifier, new DomoticzHider("127.0.0.1", "8080"));
             this._hiders = new List<Hider>
             {
-                this._hostPlayer as Hider
+                this.HostPlayer as Hider
             };
         }
         #endregion
@@ -88,11 +70,17 @@ namespace HideNSeek.Logic
         /// <summary>
         /// Starts the game for every player.
         /// </summary>
-        public async Task StartGame()
+        public void StartGame()
         {
+            _isActive = true;
+            IEnumerable<Player> players = GetAllPlayers();
+
+            foreach(Player player in players)
+            {
+                player.StartGame();
+            }
+
             _ = Task.Run(() => StartHidingTime());
-            await SendCommandToAllRemote(ERemoteCommand.StartGame, string.Empty);
-            this._isActive = true;
         }
         /// <summary>
         /// Sets the amount of time a <see cref="Hider"/> has until the <see cref="Seeker"/>s can look for them.
@@ -101,60 +89,20 @@ namespace HideNSeek.Logic
         public void SetHidingTime(int seconds)
         {
             if (!this._isActive)
-                _hidingTime = seconds;
+                HidingTime = seconds;
         }
         /// <summary>
         /// Signals all <see cref="Player"/>s that the game has ended.
         /// </summary>
-        public async Task EndGame()
+        public void EndGame()
         {
-            if (_IsHost)
-            {
-                await SendCommandToAllRemote(ERemoteCommand.EndGame, string.Empty);
-                this._isActive = false;
-            }
-            else
-            {
-                await SendCommandToHost(string.Empty, EHostCommand.EndGame, string.Empty);
-                this._isActive = false;
-            }
-        }
-        /// <summary>
-        /// Handles new tcp client connections and stores them in a dictionary.
-        /// </summary>
-        /// <param name="client">The new tcp client.</param>
-        /// <returns></returns>
-        public async Task AddClientAsync(TcpClient client)
-        {
-            // Open stream
-            using (NetworkStream ns = client.GetStream())
-            {
-                int success = -1;
+            _isActive = false;
+            IEnumerable<Player> players = GetAllPlayers();
 
-                // Get the new client identifier
-                using (StreamReader sr = new StreamReader(ns))
-                {
-                    string username = await sr.ReadLineAsync();
-
-                    if (_seekers.Where(player => player.PlayerName == username).Count() == 0
-                        && _hiders.Where(player => player.PlayerName == username).Count() == 0)
-                    {
-                        Player player = new Seeker(client, username);
-                        _seekers.Add(player as Seeker);
-                        success = HidingTime;
-                    }
-                }
-                // Send the new client either a code of failure (-1) or the hiding time.
-                using (StreamWriter sw = new StreamWriter(ns))
-                {
-                    sw.WriteLine(HostPlayer.PlayerName);
-                    sw.WriteLine(success);
-                    sw.Flush();
-                }
+            foreach (Player player in players)
+            {
+                player.EndGame();
             }
-
-            // Start listening for host commandos
-            _ = Task.Run(async () => await HandleHostCommands(client));
         }
         #endregion
 
@@ -165,43 +113,16 @@ namespace HideNSeek.Logic
         /// <param name="address">The host's ip address.</param>
         /// <param name="username">The identifier of the user for this lobby.</param>
         /// <returns>Returns a player object for the new player.</returns>
-        public async Task<Player> ConnectAsync(string address, string username)
+        public Player Connect(string address, string username)
         {
-            TcpClient client = new TcpClient();
-            client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-            await client.ConnectAsync(IPAddress.Parse(address), PORT);
+            IEnumerable<Player> players = GetAllPlayers();
 
-            Player player = null;
+            if (players.Count(p => p.PlayerName == username) > 0)
+                return null;
 
-            using (NetworkStream ns = client.GetStream())
-            {
-                using (StreamWriter sw = new StreamWriter(ns))
-                {
-                    await sw.WriteLineAsync(username);
-                    sw.Flush();
-                }
-
-                using (StreamReader sr = new StreamReader(ns))
-                {
-                    string hostName = await sr.ReadLineAsync();
-                    int result = int.Parse(await sr.ReadLineAsync());
-
-                    if (result > -1)
-                    {
-                        HidingTime = result;
-                        player = new Seeker(client, username)
-                        {
-                            HostPlayerName = hostName
-                        };
-                        this._seekers.Add(player as Seeker);
-                        this._guestClient = client;
-                    }
-                }
-            }
-
-            // Start listening for remote commandos
-            _ = Task.Run(async () => await HandleRemoteCommands(player));
-
+            Seeker player = new Seeker(username);
+            this._seekers.Add(player);
+            PlayerConnected(player);
             return player;
         }
 
@@ -209,42 +130,24 @@ namespace HideNSeek.Logic
         /// Disconnects a player from the lobby.
         /// </summary>
         /// <param name="player">The player to disconnect.</param>
-        public async Task DisconnectAsync(Player player)
+        public void Disconnect(Player player)
         {
-            // If host is handling disconnection,
-            // check if disconnect was called on host or guest
-            if (_IsHost)
+            if (_isHost)
             {
-                // Disconnect all clients if called from host,
-                // else remove client from lobby
-                if (player.Client == null)
-                {
-                    foreach (Seeker seeker in _seekers)
-                    {
-                        if (seeker != player)
-                            seeker.Disconnect();
-                    }
-
-                    foreach (Hider hider in _hiders)
-                    {
-                        if (hider != player)
-                            hider.Disconnect();
-                    }
-                }
-                else
-                {
-                    _seekers.Remove(player as Seeker);
-                    _hiders.Remove(player as Hider);
-                }
-
-                if (_cancellationToken != null)
-                    _cancellationToken.Cancel();
+                EndGame();
             }
             else
             {
-                // Send disconnection command
-                player.Client.Close();
-                await SendCommandToHost(player.PlayerName, EHostCommand.Disconnect, string.Empty);
+                if (player as Hider != null)
+                    _hiders.Remove(player as Hider);
+
+                if (player as Seeker != null)
+                    _seekers.Remove(player as Seeker);
+
+                if (_hiders.Count(p => !p.IsFound) <= 0 || _seekers.Count == 0)
+                    EndGame();
+
+                PlayerDisconnected(player);
             }
         }
 
@@ -252,16 +155,9 @@ namespace HideNSeek.Logic
         /// Gets the remaining time for the hiders to keep hiding.
         /// </summary>
         /// <returns>Returns the time in seconds.</returns>
-        public async Task<int> GetRemainingHidingTimeAsync()
+        public int GetRemainingHidingTime()
         {
-            if (_IsHost)
-            {
-                return _remainingHidingTime;
-            }
-            else
-            {
-                return int.Parse(await SendCommandToHost(string.Empty, EHostCommand.GetRemainingTime, string.Empty));
-            }
+            return _remainingHidingTime;
         }
 
         /// <summary>
@@ -271,30 +167,18 @@ namespace HideNSeek.Logic
         /// <param name="playerName">The name of the hider.</param>
         /// <param name="roomName">The name of the room.</param>
         /// <returns>Returns true if the seeker has correctly guessed the room the hider was hiding in.</returns>
-        public async Task<bool> GuessRoomAsync(Player seeker, string playerName, string roomName)
+        public bool GuessRoom(Player seeker, string playerName, string roomName)
         {
-            // If host is handling,
-            // request data from hider
-            if (_IsHost)
-            {
-                Hider hider = _hiders.Where(player => player.PlayerName == playerName).FirstOrDefault();
-                return bool.Parse(await hider.SendCommand(ERemoteCommand.GuessRoom, roomName));
-            }
-            else
-            {
-                bool result = bool.Parse(await SendCommandToHost(playerName, EHostCommand.GuessRoom, roomName));
+            Hider hider = _hiders.Where(player => player.PlayerName == playerName).FirstOrDefault();
+            bool? result = hider?.CheckRoom(roomName);
 
-                if (result)
-                {
-                    await seeker.SendCommand(ERemoteCommand.AddPoints, 10.ToString());
+            if (result == true)
+                seeker.AddPoints(10);
 
-                    // End game if all hiders are found.
-                    if (_hiders.Count(hider => !hider.IsFound) <= 0)
-                        _ = Task.Run(async () => await EndGame());
-                }
+            if (_hiders.Count(p => !p.IsFound) <= 0)
+                EndGame();
 
-                return result;
-            }
+            return result == true;
         }
 
 
@@ -303,17 +187,10 @@ namespace HideNSeek.Logic
         /// </summary>
         /// <param name="hiderUsername">The identifier of the hider.</param>
         /// <returns>The <see cref="Room"/> a <see cref="Hider"/> is currently in.</returns>
-        public async Task<Room> GetHiderLocation(string hiderUsername)
+        public Room GetHiderLocation(string hiderName)
         {
-            if (_IsHost)
-            {
-                Hider hider = _hiders.Where(player => player.PlayerName == hiderUsername).FirstOrDefault();
-                return JsonConvert.DeserializeObject<Room>(await hider.SendCommand(ERemoteCommand.GetPosition, string.Empty));
-            }
-            else
-            {
-                return JsonConvert.DeserializeObject<Room>(await SendCommandToHost(hiderUsername, EHostCommand.GetHiderPosition, string.Empty));
-            }
+            Hider hider = _hiders.Where(player => player.PlayerName == hiderName).FirstOrDefault();
+            return hider?.GetPosition() ?? new Room();
         }
 
         /// <summary>
@@ -330,208 +207,36 @@ namespace HideNSeek.Logic
         /// Gets the maps from players who have not been found yet.
         /// </summary>
         /// <returns>Returns a dictionary with maps corresponding to players.</returns>
-        public async Task<Dictionary<string, Map>> ViewMapsAsync()
+        public Dictionary<string, Map> ViewMaps()
         {
-            // If host is handling get maps from active hider,
-            // else return maps
-            if (_IsHost)
-            {
-                Dictionary<string, Map> maps = new Dictionary<string, Map>();
+            Dictionary<string, Map> maps = new Dictionary<string, Map>();
 
-                foreach (Hider hider in _hiders.Where(player => !player.IsFound))
-                {
-                    Map map = JsonConvert.DeserializeObject<Map>(await hider.SendCommand(ERemoteCommand.GetMap, string.Empty));
-                    maps.Add(hider.PlayerName, map);
-                }
+            _hiders.Where(player => !player.IsFound).ToList().ForEach((hider) => maps.Add(hider.PlayerName, hider.Map));
 
-                return maps;
-            }
-            else
-            {
-                return JsonConvert.DeserializeObject<Dictionary<string, Map>>
-                    (await SendCommandToHost(string.Empty, EHostCommand.ViewMaps, string.Empty));
-            }
+            return maps;
         }
         #endregion
         #endregion
 
         #region Methods
         /// <summary>
-        /// Handle incoming commands to host.
+        /// Gets a list of all <see cref="Player"/>s in the lobby.
         /// </summary>
-        /// <param name="client">The incoming client.</param>
-        /// <returns></returns>
-        private async Task HandleHostCommands(TcpClient client)
+        /// <returns>A list of <see cref="Player"/>s</returns>
+        private IEnumerable<Player> GetAllPlayers()
         {
-            _cancellationToken = new CancellationTokenSource();
-
-            while(_cancellationToken.IsCancellationRequested)
-            {
-                using (NetworkStream ns = client.GetStream())
-                {
-                    string target = string.Empty;
-                    string command = string.Empty;
-                    string arguments = string.Empty;
-
-                    using (StreamReader sr = new StreamReader(ns))
-                    {
-                        target = await sr.ReadLineAsync();
-                        command = await sr.ReadLineAsync();
-                        arguments = await sr.ReadLineAsync();
-                    }
-
-                    using (StreamWriter wr = new StreamWriter(ns))
-                    {
-                        await wr.WriteLineAsync(await ExecuteHostCommands(target, command, arguments));
-                    }
-                }
-            }
+            List<Player> players = new List<Player>();
+            players.AddRange(_hiders);
+            players.AddRange(_seekers);
+            return players;
         }
-        /// <summary>
-        /// Execute incomming commands on host
-        /// </summary>
-        /// <param name="target">The user target.</param>
-        /// <param name="command">The command to send.</param>
-        /// <param name="arguments">Additional arguments to send.</param>
-        /// <returns>Returns the command results.</returns>
-        private async Task<string> ExecuteHostCommands(string target, string command, string arguments)
-        {
-            if (!Enum.TryParse(command, out EHostCommand hostCommand))
-                return string.Empty;
 
-            switch (hostCommand)
-            {
-                case EHostCommand.Disconnect:
-                    Player player = _hiders.FirstOrDefault(p => p.PlayerName == target) ?? (Player)_seekers.FirstOrDefault(p => p.PlayerName == target);
-                    player?.Client.Close();
-                    break;
-                case EHostCommand.EndGame:
-                    await EndGame();
-                    break;
-                case EHostCommand.GetRemainingTime:
-                    return _remainingHidingTime.ToString();
-                case EHostCommand.GuessRoom:
-                    Hider hider = _hiders.FirstOrDefault(p => p.PlayerName == target);
-                    bool result = await hider?.SendCommand(ERemoteCommand.GetPosition, string.Empty) == arguments;
-                    return result.ToString();
-                case EHostCommand.ViewMaps:
-                    return JsonConvert.SerializeObject(await ViewMapsAsync());
-                default:
-                    return string.Empty;
-            }
-
-            return string.Empty;
-        }
-        /// <summary>
-        /// Send a command to host.
-        /// </summary>
-        /// <param name="target">The user target.</param>
-        /// <param name="command">The command to send.</param>
-        /// <param name="arguments">Additional arguments to send.</param>
-        private async Task<string> SendCommandToHost(string target, EHostCommand command, string arguments)
-        {
-            if (_IsHost)
-                return string.Empty;
-
-            using (NetworkStream ns = _guestClient.GetStream())
-            {
-                using (StreamWriter sw = new StreamWriter(ns))
-                {
-                    await sw.WriteLineAsync(target);
-                    await sw.WriteLineAsync(command.ToString());
-                    await sw.WriteLineAsync(arguments);
-                    sw.Flush();
-                }
-                using (StreamReader sr = new StreamReader(ns))
-                {
-                    return await sr.ReadLineAsync();
-                }
-            }
-        }
-        /// <summary>
-        /// Handle incoming commands to remote connection.
-        /// </summary>
-        /// <param name="player">The remote player.</param>
-        /// <returns></returns>
-        private async Task HandleRemoteCommands(Player player)
-        {
-            _cancellationToken = new CancellationTokenSource();
-
-            while (_cancellationToken.IsCancellationRequested)
-            {
-                using (NetworkStream ns = player.Client.GetStream())
-                {
-                    string command = string.Empty;
-                    string arguments = string.Empty;
-
-                    using (StreamReader sr = new StreamReader(ns))
-                    {
-                        command = await sr.ReadLineAsync();
-                        arguments = await sr.ReadLineAsync();
-                    }
-
-                    using (StreamWriter wr = new StreamWriter(ns))
-                    {
-                        await wr.WriteLineAsync(ExecuteRemoteCommands(player, command, arguments));
-                    }
-                }
-            }
-        }
-        /// <summary>
-        /// Execute incomming commands on remote
-        /// </summary>
-        /// <param name="player">The remote player.</param>
-        /// <param name="command">The command to send.</param>
-        /// <param name="arguments">Additional arguments to send.</param>
-        /// <returns>Returns the command results.</returns>
-        private string ExecuteRemoteCommands(Player player, string command, string arguments)
-        {
-            if (!Enum.TryParse(command, out ERemoteCommand remoteCommand))
-                return string.Empty;
-
-            Hider hider = player as Hider;
-
-            switch (remoteCommand)
-            {
-                case ERemoteCommand.StartGame:
-                    player.StartGame();
-                    break;
-                case ERemoteCommand.EndGame:
-                    player.EndGame();
-                    break;
-                case ERemoteCommand.GuessRoom:
-                    return hider?.CheckRoom(arguments).ToString();
-                case ERemoteCommand.AddPoints:
-                    player.AddPoints(int.Parse(arguments));
-                    break;
-                case ERemoteCommand.GetMap:
-                    return JsonConvert.SerializeObject(hider?.Map);
-                case ERemoteCommand.GetPosition:
-                    return JsonConvert.SerializeObject(hider?.GetPosition());
-                default:
-                    return string.Empty;
-            }
-
-            return string.Empty;
-        }
-        /// <summary>
-        /// Send a command to all client connections.
-        /// </summary>
-        /// <param name="command">The command to send.</param>
-        /// <param name="arguments">Additional arguments to send.</param>
-        private async Task SendCommandToAllRemote(ERemoteCommand command, string arguments)
-        {
-            foreach (Hider hider in _hiders)
-                await hider.SendCommand(command, arguments);
-            foreach (Seeker seeker in _seekers)
-                await seeker.SendCommand(command, arguments);
-        }
         /// <summary>
         /// Starts the hiding timer
         /// </summary>
         private void StartHidingTime()
         {
-            _remainingHidingTime = _hidingTime;
+            _remainingHidingTime = HidingTime;
 
             while (_remainingHidingTime > 0)
             {
@@ -551,6 +256,14 @@ namespace HideNSeek.Logic
                     .FirstOrDefault()
                     .AddPoints(points);
         }
+        #endregion
+
+        #region Events
+        public delegate void PlayerConnectedHandler(Player player);
+        public event PlayerConnectedHandler PlayerConnected;
+
+        public delegate void PlayerDisconnectedHandler(Player player);
+        public event PlayerDisconnectedHandler PlayerDisconnected;
         #endregion
     }
 }

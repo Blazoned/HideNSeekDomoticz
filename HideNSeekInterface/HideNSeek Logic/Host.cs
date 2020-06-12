@@ -12,13 +12,9 @@ namespace HideNSeek.Logic
     public class Host
     {
         #region Constants
-        const int PORT = 25555;
-        const string LOCAL_ADDRESS = "127.0.0.1";
         #endregion
 
         #region Fields
-        private CancellationTokenSource _cancellationTokenSource;
-        private TcpListener _hostListener;
         #endregion
 
         #region Properties
@@ -29,7 +25,7 @@ namespace HideNSeek.Logic
         /// <summary>
         /// Gets the server address.
         /// </summary>
-        public string Address { get { return _hostListener.Server.RemoteEndPoint.ToString(); } }
+        public string Address { get; set; }
         #endregion
 
         #region Constructor
@@ -40,21 +36,6 @@ namespace HideNSeek.Logic
         public Host(string username)
         {
             this.Lobby = new Lobby(username);
-
-            IPAddress localAddress = IPAddress.Parse(LOCAL_ADDRESS);
-            
-            this._hostListener = new TcpListener(localAddress, PORT);
-            this._hostListener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-            this._hostListener.Start();
-
-            this._cancellationTokenSource = new CancellationTokenSource();
-            _ = Task.Run(async () =>
-            {
-                while (!this._cancellationTokenSource.IsCancellationRequested)
-                {
-                    await HostLobby();
-                }
-            });
         }
         #endregion
 
@@ -62,9 +43,9 @@ namespace HideNSeek.Logic
         /// <summary>
         /// Starts the game for every <see cref="Player"/>.
         /// </summary>
-        public async void StartGame()
+        public void StartGame()
         {
-            await Lobby.StartGame();
+            Lobby.StartGame();
         }
         /// <summary>
         /// Sets the amount of time the hider has for hiding.
@@ -77,47 +58,20 @@ namespace HideNSeek.Logic
         /// <summary>
         /// Ends the game for every <see cref="Player"/>
         /// </summary>
-        public async void EndGame()
+        public void EndGame()
         {
-            await Lobby.EndGame();
-        }
-        /// <summary>
-        /// Closes the lobby to new <see cref="Player"/>s.
-        /// </summary>
-        public void CloseLobby()
-        {
-            _cancellationTokenSource.Cancel();
+            Lobby.EndGame();
         }
         /// <summary>
         /// Disbands the entire lobby.
         /// </summary>
-        public async void DisbandLobby()
+        public void DisbandLobby()
         {
-            await Lobby.DisconnectAsync(Lobby.HostPlayer);
-            _hostListener.Stop();
+            Lobby.Disconnect(Lobby.HostPlayer);
         }
         #endregion
 
         #region Methods
-        /// <summary>
-        /// Start accepting incomming connections.
-        /// </summary>
-        /// <returns></returns>
-        private async Task HostLobby()
-        {
-            TcpClient client = await this._hostListener.AcceptTcpClientAsync();
-            client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-
-            _ = Task.Run(async () =>
-            {
-                await Lobby.AddClientAsync(client);
-            });
-        }
-        #endregion
-
-        #region Events
-        public delegate void PlayerConnectedHandler();
-        public event PlayerConnectedHandler PlayerConnected;
         #endregion
     }
 }

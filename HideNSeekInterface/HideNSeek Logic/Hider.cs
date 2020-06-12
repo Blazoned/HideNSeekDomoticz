@@ -31,7 +31,7 @@ namespace HideNSeek.Logic
         /// </summary>
         /// <param name="client">The client connection.</param>
         /// <param name="username">The user's identifier.</param>
-        public Hider(TcpClient client, string username, IHiderDAL dal) : base(client, username)
+        public Hider(string username, IHiderDAL dal) : base(username)
         {
             BeginGame += BeginHiding;
             _hiderDAL = dal;
@@ -39,26 +39,11 @@ namespace HideNSeek.Logic
         #endregion
 
         #region Functions
-        /// <summary>
-        /// Notifies that the user is found.
-        /// </summary>
-        public void SetPlayerFound()
-        {
-            IsFound = true;
-            PlayerFound(this.PlayerName);
-        }
-
         public List<Room> SetMap()
         {
             throw new NotImplementedException();
         }
-        /// <summary>
-        /// Start the hiding process.
-        /// </summary>
-        public void StartHiding()
-        {
-            _hiderDAL.StartHiding();
-        }
+        
         /// <summary>
         /// Check if the <see cref="Hider"/> is in the specified room.
         /// </summary>
@@ -69,10 +54,14 @@ namespace HideNSeek.Logic
             bool result = _hiderDAL.GetCurrentRoom() == roomName;
 
             if (result)
-                SetPlayerFound();
+            {
+                IsFound = true;
+                PlayerFound(this.PlayerName);
+            }
 
             return result;
         }
+
         /// <summary>
         /// Gets the room the <see cref="Hider"/> is currently in.
         /// </summary>
@@ -85,9 +74,12 @@ namespace HideNSeek.Logic
         #endregion
 
         #region Methods
-        private void BeginHiding(int hidingTime)
+        /// <summary>
+        /// Start the hiding process.
+        /// </summary>
+        private void BeginHiding()
         {
-            StartHiding();
+            _hiderDAL.StartHiding();
         }
         #endregion
 

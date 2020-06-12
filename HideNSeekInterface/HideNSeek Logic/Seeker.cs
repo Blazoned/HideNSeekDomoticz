@@ -15,7 +15,7 @@ namespace HideNSeek.Logic
         /// </summary>
         /// <param name="client">The client connection.</param>
         /// <param name="username">The user's identifier.</param>
-        public Seeker(TcpClient client, string username) : base(client, username) { }
+        public Seeker(string username) : base(username) { }
         #endregion
 
         #region Functions
@@ -23,9 +23,9 @@ namespace HideNSeek.Logic
         /// View the maps of players who are not yet found.
         /// </summary>
         /// <returns>Returns a dictionary of players and their corresponding maps.</returns>
-        public async Task<Dictionary<string, Map>> ViewMaps()
+        public Dictionary<string, Map> ViewMaps()
         {
-            return await Lobby.ViewMapsAsync();
+            return Lobby.ViewMaps();
         }
         /// <summary>
         /// Guess the room a <see cref="Hider"/> is hiding in.
@@ -33,9 +33,9 @@ namespace HideNSeek.Logic
         /// <param name="playerName">The name of the hider.</param>
         /// <param name="room">The name of the room on the hider's map.</param>
         /// <returns>Returns true if found, else returns false.</returns>
-        public async Task<bool> GuessRoom(string playerName, string roomName)
+        public bool GuessRoom(string playerName, string roomName)
         {
-            return await Lobby.GuessRoomAsync(this, playerName, roomName);
+            return Lobby.GuessRoom(this, playerName, roomName);
         }
         #endregion
     }

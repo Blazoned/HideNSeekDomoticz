@@ -23,9 +23,6 @@ namespace HideNSeek.Interface
         public MainWindow()
         {
             InitializeComponent();
-#if DEBUG
-            tbAddress.Text = "127.0.0.1";
-#endif
         }
 
         /// <summary>
